@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0F15">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="การเงินของฉัน">
+<title>การเงินของฉัน</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap">
+<style>
+  :root { --bg: #0F1217; --side: #0B0F15; --surface: #171B22; --line: #2A313C; --text: #E9ECF1; --text-2: #C9CFD8; --muted: #A0A8B4;
+          --accent: #5B9BFF; --accent-2: #7AAEFF; --down: #FF8A92; --down-bg: rgba(240,96,106,0.16); --up: #5FD39D; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--side); color: var(--text); font-family: 'Sarabun', 'Noto Sans Thai', 'Thonburi', sans-serif; line-height: 1.6; -webkit-text-size-adjust: 100%; }
+  #app { position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border: 0; background: var(--bg); padding-top: env(safe-area-inset-top); }
+  .layer { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+           padding: calc(env(safe-area-inset-top) + 32px) 24px calc(env(safe-area-inset-bottom) + 32px); background: var(--side); text-align: center; }
+  .layer.show { display: flex; }
+  .mark { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 18px; background: var(--accent); color: var(--side); }
+  h1 { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.3; }
+  p { margin: 0; color: var(--muted); font-size: 14px; max-width: 320px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; min-height: 56px; padding: 0 20px; border-radius: 12px;
+         border: 1px solid var(--line); background: transparent; color: var(--text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: #1E232C; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--side); }
+  .btn-primary:hover { background: var(--accent-2); }
+  .btn[disabled] { background: #3A4352; border-color: #3A4352; color: var(--muted); cursor: wait; }
+  .link { min-height: 44px; border: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 14px; cursor: pointer; }
+  .err { display: none; max-width: 320px; padding: 12px 16px; border-radius: 8px; background: var(--down-bg); color: var(--down); font-size: 14px; }
+  .err.show { display: block; }
+  .stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+  .setup { max-width: 520px; text-align: left; }
+  .setup code { padding: 2px 6px; border-radius: 4px; background: var(--surface); color: var(--text-2); font-size: 14px; }
+</style>
+</head>
+<body>
+<iframe id="app" title="การเงินของฉัน" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
+
+<!-- หน้าปลดล็อกด้วย Face ID (แสดงเมื่อเครื่องนี้เคยเปิดใช้) -->
+<section class="layer" id="lock" role="dialog" aria-modal="true" aria-labelledby="lock-h">
+  <span class="mark" aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
+  <div class="stack"><h1 id="lock-h">การเงินของฉัน</h1><p id="lock-sub">ปลดล็อกด้วย Face ID</p></div>
+  <div class="stack">
+    <button type="button" class="btn btn-primary" id="btn-unlock">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1"/><path d="M9 16c1.6 1.3 4.4 1.3 6 0"/></svg>
+      <span id="unlock-label">ปลดล็อกด้วย Face ID</span>
+    </button>
+    <div class="err" id="lock-err" role="alert"></div>
+    <button type="button" class="link" id="btn-pin">ใช้ PIN แทน</button>
+  </div>
+</section>
+
+<!-- ยืนยันเปิดใช้ Face ID (เรียกจากหน้าความปลอดภัยในแอป) -->
+<section class="layer" id="reg" role="dialog" aria-modal="true" aria-labelledby="reg-h">
+  <span class="mark" aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1"/><path d="M9 16c1.6 1.3 4.4 1.3 6 0"/></svg></span>
+  <div class="stack"><h1 id="reg-h">เปิดใช้ Face ID บนเครื่องนี้</h1><p>ครั้งต่อไปเปิดแอปแล้วมองหน้าจอเพื่อเข้าใช้ได้เลย · ข้อมูลใบหน้าไม่ออกจากเครื่อง แอปเก็บเพียงกุญแจสาธารณะ</p></div>
+  <div class="stack">
+    <button type="button" class="btn btn-primary" id="btn-reg">ยืนยันด้วย Face ID</button>
+    <div class="err" id="reg-err" role="alert"></div>
+    <button type="button" class="link" id="btn-reg-cancel">ยกเลิก</button>
+  </div>
+</section>
+
+<!-- ยังไม่ได้ตั้งค่า config.js -->
+<section class="layer" id="setup" aria-labelledby="setup-h">
+  <div class="setup stack" style="align-items:flex-start">
+    <h1 id="setup-h">ยังไม่ได้ใส่ลิงก์เว็บแอป</h1>
+    <p style="max-width:none">เปิดไฟล์ <code>config.js</code> ใน repository ของ GitHub Pages แล้ววางลิงก์เว็บแอป Apps Script (ลงท้ายด้วย <code>/exec</code>) ที่ <code>GAS_URL</code> จากนั้นรอ 1–2 นาทีแล้วเปิดใหม่</p>
+  </div>
+</section>
+
+<script src="config.js"></script>
+<script>
+/* ============================================================
+   แอปห่อ: เปิดเว็บแอป Apps Script เต็มจอ + ปลดล็อกด้วย Face ID (WebAuthn)
+   - เรียก Face ID จากหน้านี้ (โดเมนของคุณ) เพราะกรอบของ Apps Script เรียกไม่ได้
+   - คุยกับสคริปต์ผ่าน doPost (เฉพาะคำสั่ง Face ID) แล้วส่งโทเค็นให้แอปในกรอบด้วย postMessage
+   - ไม่เก็บโทเค็นหรือ PIN ลงเครื่อง (จำไว้แค่รหัสกุญแจ ซึ่งไม่ใช่ความลับ)
+   ES5
+   ============================================================ */
+(function () {
+  var C = window.MF_CONFIG || {};
+  var appRe = new RegExp(C.APP_ORIGIN_RE || '^$');
+  var frame = document.getElementById('app');
+  var inner = null;            // { win, origin } ของแอปในกรอบ
+  var pendingToken = null;     // โทเค็นที่รอส่งให้แอป (อยู่ในหน่วยความจำเท่านั้น)
+  var loginOpt = null, regOpt = null, regTicket = '';
+  var faceIdOk = false;
+
+  function $(id) { return document.getElementById(id); }
+  function show(id, on) { $(id).className = 'layer' + (on ? ' show' : ''); }
+  function err(id, msg) { var e = $(id); e.textContent = msg || ''; e.className = 'err' + (msg ? ' show' : ''); }
+  function store(v) {
+    try { if (v) localStorage.setItem('mf_pk', JSON.stringify(v)); else localStorage.removeItem('mf_pk'); } catch (e) {}
+  }
+  function stored() { try { return JSON.parse(localStorage.getItem('mf_pk') || 'null'); } catch (e) { return null; } }
+  function deviceLabel() {
+    var ua = navigator.userAgent || '';
+    var dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'อุปกรณ์อื่น';
+    var standalone = (window.navigator.standalone === true) || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    return dev + (standalone ? ' · แอปหน้าจอโฮม' : ' · เบราว์เซอร์');
+  }
+
+  /* ---------- base64url ---------- */
+  function b64uToBuf(s) {
+    s = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u.buffer;
+  }
+  function bufToB64u(buf) {
+    var u = new Uint8Array(buf), s = '';
+    for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  /* ---------- เรียกสคริปต์ (doPost) ---------- */
+  function api(action, payload) {
+    return fetch(C.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, payload: payload || {} }), redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res || !res.ok) { var e = new Error((res && res.error) || 'ติดต่อเซิร์ฟเวอร์ไม่สำเร็จ'); e.code = res && res.code; throw e; }
+        return res.data;
+      });
+  }
+  function webauthnMsg(e) {
+    var n = e && e.name;
+    if (n === 'NotAllowedError') return 'ยกเลิกแล้ว หรือหมดเวลา — กดอีกครั้งเมื่อพร้อม';
+    if (n === 'InvalidStateError') return 'เครื่องนี้เปิดใช้ Face ID ไว้แล้ว';
+    if (n === 'SecurityError') return 'โดเมนของแอปไม่ตรงกับที่ตั้งไว้ในหน้าความปลอดภัย';
+    if (n === 'NotSupportedError') return 'เครื่องนี้ไม่รองรับ Face ID / Touch ID';
+    return (e && e.message) || 'เกิดข้อผิดพลาด';
+  }
+
+  /* ---------- ส่งข้อความถึงแอปในกรอบ ---------- */
+  function toApp(msg) { if (inner) inner.win.postMessage(msg, inner.origin); }
+  function deliverToken() {
+    if (pendingToken && inner) { toApp({ type: 'mf-token', token: pendingToken.token, mustChange: pendingToken.mustChange }); pendingToken = null; }
+  }
+  function wrapperInfo() {
+    var s = stored();
+    toApp({ type: 'mf-wrapper', faceId: faceIdOk, registered: !!(s && s.ids && s.ids.length), v: 1 });
+  }
+
+  /* ---------- ปลดล็อก ---------- */
+  // เตรียมโจทย์ไว้ก่อนกดปุ่ม เพราะ Safari ให้เรียก Face ID ได้ทันทีในจังหวะที่ผู้ใช้แตะเท่านั้น
+  function prepareLogin() {
+    loginOpt = null;
+    $('btn-unlock').disabled = true;
+    $('unlock-label').textContent = 'กำลังเตรียม…';
+    err('lock-err', '');
+    api('pk.loginBegin').then(function (o) {
+      loginOpt = o; loginOpt.at = new Date().getTime();
+      $('btn-unlock').disabled = false;
+      $('unlock-label').textContent = 'ปลดล็อกด้วย Face ID';
+    }, function (e) {
+      $('btn-unlock').disabled = false;
+      $('unlock-label').textContent = 'ลองอีกครั้ง';
+      if (e.code === 'SETUP') { store(null); show('lock', false); return; }
+      err('lock-err', e.message);
+    });
+  }
+  function openLock(sub) {
+    $('lock-sub').textContent = sub || 'ปลดล็อกด้วย Face ID';
+    show('lock', true);
+    prepareLogin();
+    setTimeout(function () { $('btn-unlock').focus(); }, 50);
+  }
+  $('btn-unlock').addEventListener('click', function () {
+    if (!loginOpt || new Date().getTime() - loginOpt.at > 240000) { prepareLogin(); return; }
+    var o = loginOpt;
+    loginOpt = null;
+    err('lock-err', '');
+    var allow = [];
+    for (var i = 0; i < o.allow.length; i++) allow.push({ type: 'public-key', id: b64uToBuf(o.allow[i]), transports: ['internal', 'hybrid'] });
+    navigator.credentials.get({ publicKey: { challenge: b64uToBuf(o.challenge), rpId: o.rpId, allowCredentials: allow, userVerification: 'required', timeout: o.timeout } })
+      .then(function (cred) {
+        $('btn-unlock').disabled = true; $('unlock-label').textContent = 'กำลังตรวจสอบ…';
+        return api('pk.loginFinish', {
+          id: cred.id, clientDataJSON: bufToB64u(cred.response.clientDataJSON), authenticatorData: bufToB64u(cred.response.authenticatorData),
+          signature: bufToB64u(cred.response.signature), device: deviceLabel()
+        });
+      })
+      .then(function (r) {
+        pendingToken = r;
+        show('lock', false);
+        $('btn-unlock').disabled = false;
+        deliverToken();
+      }, function (e) {
+        $('btn-unlock').disabled = false;
+        $('unlock-label').textContent = 'ปลดล็อกด้วย Face ID';
+        if (e && e.code === 'AUTH' && /ไม่พบ Face ID/.test(e.message)) store(null);
+        err('lock-err', webauthnMsg(e));
+        prepareLogin();
+      });
+  });
+  $('btn-pin').addEventListener('click', function () { show('lock', false); toApp({ type: 'mf-pin' }); frame.focus(); });
+
+  /* ---------- ลงทะเบียน ---------- */
+  function openRegister(ticket) {
+    regTicket = ticket; regOpt = null;
+    err('reg-err', '');
+    show('reg', true);
+    $('btn-reg').disabled = true; $('btn-reg').textContent = 'กำลังเตรียม…';
+    api('pk.regBegin', { ticket: ticket }).then(function (o) {
+      regOpt = o;
+      $('btn-reg').disabled = false; $('btn-reg').textContent = 'ยืนยันด้วย Face ID';
+      $('btn-reg').focus();
+    }, function (e) { err('reg-err', e.message); $('btn-reg').textContent = 'ยืนยันด้วย Face ID'; });
+  }
+  $('btn-reg').addEventListener('click', function () {
+    var o = regOpt;
+    if (!o) return;
+    err('reg-err', '');
+    var ex = [];
+    for (var i = 0; i < o.exclude.length; i++) ex.push({ type: 'public-key', id: b64uToBuf(o.exclude[i]) });
+    navigator.credentials.create({ publicKey: {
+      challenge: b64uToBuf(o.challenge), rp: o.rp,
+      user: { id: b64uToBuf(o.user.id), name: o.user.name, displayName: o.user.displayName },
+      pubKeyCredParams: [{ type: 'public-key', alg: o.alg }], timeout: o.timeout, attestation: 'none', excludeCredentials: ex,
+      authenticatorSelection: { authenticatorAttachment: 'platform', residentKey: 'preferred', userVerification: 'required' }
+    } }).then(function (cred) {
+      $('btn-reg').disabled = true; $('btn-reg').textContent = 'กำลังบันทึก…';
+      return api('pk.regFinish', {
+        ticket: regTicket, id: cred.id, clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+        attestationObject: bufToB64u(cred.response.attestationObject), device: deviceLabel()
+      });
+    }).then(function (r) {
+      var s = stored() || { ids: [] };
+      if (s.ids.indexOf(r.id) < 0) s.ids.push(r.id);
+      store(s);
+      show('reg', false);
+      $('btn-reg').disabled = false; $('btn-reg').textContent = 'ยืนยันด้วย Face ID';
+      toApp({ type: 'mf-registered', ok: true, device: r.device });
+      wrapperInfo();
+    }, function (e) {
+      $('btn-reg').disabled = false; $('btn-reg').textContent = 'ยืนยันด้วย Face ID';
+      err('reg-err', webauthnMsg(e));
+      if (regTicket) openRegister(regTicket);   // ขอโจทย์ใหม่ให้กดซ้ำได้
+    });
+  });
+  $('btn-reg-cancel').addEventListener('click', function () { show('reg', false); toApp({ type: 'mf-registered', ok: false, error: 'ยกเลิกแล้ว' }); });
+
+  /* ---------- รับข้อความจากแอปในกรอบ ---------- */
+  window.addEventListener('message', function (e) {
+    if (!appRe.test(e.origin) || !e.data || typeof e.data !== 'object') return;
+    var d = e.data;
+    if (d.type === 'mf-hello') { inner = { win: e.source, origin: e.origin }; wrapperInfo(); deliverToken(); }
+    else if (!inner || e.source !== inner.win) return;
+    else if (d.type === 'mf-register' && /^[a-f0-9]{64}$/.test(String(d.ticket))) openRegister(d.ticket);
+    else if (d.type === 'mf-unlock') openLock();
+    else if (d.type === 'mf-forget') { var s = stored(); if (s && s.ids) { s.ids = s.ids.filter(function (x) { return x !== d.id; }); store(s.ids.length ? s : null); } wrapperInfo(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('reg').className.indexOf('show') >= 0) $('btn-reg-cancel').click();
+  });
+
+  /* ---------- เริ่ม ---------- */
+  if (!C.GAS_URL || /วางรหัส/.test(C.GAS_URL)) { show('setup', true); return; }
+  frame.src = C.GAS_URL;
+  var avail = window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
+    ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable() : Promise.resolve(false);
+  avail.then(function (ok) {
+    faceIdOk = !!ok;
+    if (inner) wrapperInfo();
+    var s = stored();
+    if (faceIdOk && s && s.ids && s.ids.length) openLock();
+  }, function () { faceIdOk = false; });
+  if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
+})();
+</script>
+</body>
+</html>
