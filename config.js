@@ -11,7 +11,7 @@
  *  - ลิงก์เดิมใช้ได้ตลอด แม้ทำให้ใช้งานได้เป็น "เวอร์ชันใหม่" (แก้ไขรายการเดิม ไม่ใช่สร้างใหม่)
  * ================================================================ */
 var MF_CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/วางรหัสเว็บแอปของคุณที่นี่/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwSPkUT6_CF6_NPd4O75_bklDddyV4oTvSi6Ntd1HGH5DqU75K8pCrU8bEnv1MSyloj_Q/exec',
 
   APP_NAME: 'การเงินของฉัน',
 
